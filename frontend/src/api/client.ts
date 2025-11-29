@@ -18,6 +18,7 @@ export const transactionApi = {
     start_date?: string;
     end_date?: string;
     category_id?: number;
+    uncategorized?: boolean;
     search?: string;
   }) => {
     const response = await api.get<Transaction[]>('/transactions/', { params });
@@ -41,6 +42,19 @@ export const transactionApi = {
 
   delete: async (id: number) => {
     const response = await api.delete(`/transactions/${id}`);
+    return response.data;
+  },
+
+  bulkCategorize: async (transactionIds: number[], categoryId: number | null, learn = true) => {
+    const response = await api.post(`/transactions/bulk-categorize?learn=${learn}`, {
+      transaction_ids: transactionIds,
+      category_id: categoryId,
+    });
+    return response.data;
+  },
+
+  autoCategorize: async (params?: { start_date?: string; end_date?: string }) => {
+    const response = await api.post('/transactions/auto-categorize', null, { params });
     return response.data;
   },
 

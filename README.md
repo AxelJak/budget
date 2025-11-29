@@ -6,6 +6,9 @@ En självhostad webbapp för att spåra hushållets ekonomi. Importera kontoutdr
 
 - **CSV-import**: Drag-and-drop import från SEB-kontoutdrag
 - **Automatisk kategorisering**: Lär sig från dina kategoriseringar och föreslår kategorier
+- **Bulk-kategorisering**: Välj flera transaktioner och kategorisera samtidigt
+- **Smart filtrering**: Visa endast okategoriserade transaktioner
+- **Auto-kategorisering**: Kategorisera alla okategoriserade transaktioner automatiskt baserat på regler
 - **Dubbletthantering**: Automatisk detektering av dubbletter
 - **Löneperioder**: Budgetvy baserad på 25:e till 24:e (konfigurerbart)
 - **Visualisering**: Dashboard med grafer och sammanfattningar
@@ -96,10 +99,26 @@ Transaktioner kategoriseras automatiskt baserat på:
 
 ### 2. Kategorisera transaktioner
 
+**Manuell kategorisering:**
 1. Gå till "Transaktioner"-sidan
 2. Klicka på kategorin för en transaktion
 3. Välj ny kategori från dropdown
 4. Systemet lär sig och skapar automatiskt en regel
+
+**Bulk-kategorisering:**
+1. Använd checkboxarna för att välja flera transaktioner
+2. Välj kategori från dropdown i den blå åtgärdspanelen
+3. Klicka "Kategorisera valda"
+4. Systemet lär sig från den första transaktionen och skapar en regel
+
+**Auto-kategorisering:**
+1. Klicka på "Auto-kategorisera"-knappen (lila/indigo)
+2. Välj om du vill kategorisera alla transaktioner eller bara vald period
+3. Systemet tillämpar alla befintliga regler på okategoriserade transaktioner
+
+**Filtrering:**
+- Klicka på "Visa okategoriserade" för att endast visa transaktioner utan kategori
+- Bra för att snabbt hitta och kategorisera pendande transaktioner
 
 ### 3. Hantera kategorier
 
@@ -151,14 +170,57 @@ http://localhost:8000/docs (när servern körs)
 
 ### Viktigaste endpoints:
 
+**Transaktioner:**
 - `POST /api/transactions/import` - Importera CSV
-- `GET /api/transactions/` - Hämta transaktioner
+- `GET /api/transactions/` - Hämta transaktioner (stöder filtrering: `uncategorized`, `category_id`, `start_date`, `end_date`, `search`)
 - `GET /api/transactions/current-period` - Aktuell periods transaktioner
 - `PUT /api/transactions/{id}` - Uppdatera transaktion
+- `DELETE /api/transactions/{id}` - Ta bort transaktion
+- `POST /api/transactions/bulk-categorize` - Kategorisera flera transaktioner samtidigt
+- `POST /api/transactions/auto-categorize` - Auto-kategorisera okategoriserade transaktioner
+
+**Kategorier:**
 - `GET /api/categories/` - Hämta kategorier
 - `POST /api/categories/` - Skapa kategori
+- `PUT /api/categories/{id}` - Uppdatera kategori
+- `DELETE /api/categories/{id}` - Ta bort kategori
+
+**Perioder:**
 - `GET /api/periods/current` - Aktuell period-summering
 - `GET /api/periods/list` - Lista perioder
+
+## Testning
+
+### E2E-tester med Playwright
+
+Appen har omfattande end-to-end tester som testar alla nya kategoriseringsfunktioner.
+
+```bash
+cd frontend
+
+# Installera Playwright browsers (första gången)
+npx playwright install
+
+# Kör alla tester
+npx playwright test
+
+# Kör specifik testfil
+npx playwright test categorization.spec.ts
+
+# Kör tester med synlig browser
+npx playwright test --headed
+
+# Visa test-rapport
+npx playwright show-report
+```
+
+**Testade funktioner:**
+- Uncategorized filter (visa/dölj)
+- Bulk selection (checkboxar, select all)
+- Bulk categorization (välj flera, kategorisera)
+- Auto-categorize knapp
+- Period navigation
+- UI-feedback och felhantering
 
 ## Utveckling
 
@@ -206,18 +268,32 @@ budget/
 3. Skapa komponenter i `src/components/`
 4. Skapa sidor i `src/pages/`
 
-## Framtida funktioner (Fas 2-4)
+## Implementerade funktioner
 
-### Fas 2 - Förbättrad automatisering
-- [ ] Avancerad regelhantering (regex, prioritet)
-- [ ] Bulk-kategorisering
-- [ ] Smart lärande från mönster
+### ✅ Fas 1 - Grundläggande funktionalitet
+- [x] CSV-import med drag-and-drop
+- [x] Automatisk kategorisering baserad på regler
+- [x] Manuell kategorisering med lärande
+- [x] Dubblettdetektering
+- [x] Dashboard med grafer
+- [x] Kategorihantering med budgetgränser
+- [x] Period-baserad vy (25:e - 24:e)
+
+### ✅ Fas 2 - Förbättrad automatisering
+- [x] Bulk-kategorisering av flera transaktioner
+- [x] Smart filtrering (visa endast okategoriserade)
+- [x] Auto-kategorisering av alla transaktioner
+- [x] Regelhantering (substring och regex)
+- [x] Lärande från manuella kategoriseringar
+
+## Framtida funktioner (Fas 3-4)
 
 ### Fas 3 - Utökad visualisering
 - [ ] Trend-grafer över tid
 - [ ] Period-jämförelser
 - [ ] Export till CSV/Excel
 - [ ] Budgetprognoser
+- [ ] Regelhantering UI (visa, redigera, ta bort regler)
 
 ### Fas 4 - Extra funktioner
 - [ ] Budgetvarningar (när 80%/100% av budget används)
@@ -225,6 +301,7 @@ budget/
 - [ ] Multi-användare (separata konton)
 - [ ] Mobilanpassning/PWA
 - [ ] Stöd för flera bankkonton
+- [ ] Återkommande transaktioner (prenumerationer)
 
 ## Licens
 

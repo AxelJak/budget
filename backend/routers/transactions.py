@@ -5,7 +5,7 @@ from datetime import datetime
 
 from database import get_db
 from models.database import Transaction, Category
-from models.schemas import Transaction as TransactionSchema, TransactionUpdate, ImportResponse
+from models.schemas import Transaction as TransactionSchema, TransactionUpdate, ImportResponse, BulkCategorizeRequest
 from services.csv_parser import parse_seb_csv
 from services.categorizer import TransactionCategorizer
 from services.period_calculator import PeriodCalculator
@@ -86,6 +86,7 @@ def get_transactions(
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     category_id: Optional[int] = None,
+    uncategorized: Optional[bool] = None,
     search: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
@@ -100,6 +101,11 @@ def get_transactions(
         query = query.filter(Transaction.date <= end_date)
     if category_id:
         query = query.filter(Transaction.category_id == category_id)
+    if uncategorized is not None:
+        if uncategorized:
+            query = query.filter(Transaction.category_id.is_(None))
+        else:
+            query = query.filter(Transaction.category_id.isnot(None))
     if search:
         query = query.filter(Transaction.description.ilike(f"%{search}%"))
 
@@ -187,3 +193,84 @@ def delete_transaction(transaction_id: int, db: Session = Depends(get_db)):
     db.delete(transaction)
     db.commit()
     return {"message": "Transaktion borttagen"}
+
+
+@router.post("/bulk-categorize")
+def bulk_categorize_transactions(
+    request: BulkCategorizeRequest,
+    learn: bool = Query(True, description="Skapa regler från manuell kategorisering"),
+    db: Session = Depends(get_db)
+):
+    """
+    Kategorisera flera transaktioner samtidigt
+    """
+    transactions = db.query(Transaction).filter(Transaction.id.in_(request.transaction_ids)).all()
+
+    if not transactions:
+        raise HTTPException(status_code=404, detail="Inga transaktioner hittades")
+
+    categorizer = TransactionCategorizer(db) if learn else None
+    updated_count = 0
+
+    for transaction in transactions:
+        old_category = transaction.category_id
+        transaction.category_id = request.category_id
+        transaction.is_manually_categorized = True
+
+        # Lär från första transaktionen i bulken
+        if learn and categorizer and request.category_id and request.category_id != old_category and updated_count == 0:
+            categorizer.learn_from_manual_categorization(
+                transaction.description,
+                request.category_id
+            )
+
+        updated_count += 1
+
+    db.commit()
+
+    return {
+        "message": f"Kategoriserade {updated_count} transaktioner",
+        "updated_count": updated_count
+    }
+
+
+@router.post("/auto-categorize")
+def auto_categorize_uncategorized(
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Kör automatisk kategorisering på okategoriserade transaktioner
+    """
+    query = db.query(Transaction).filter(Transaction.category_id.is_(None))
+
+    if start_date:
+        query = query.filter(Transaction.date >= start_date)
+    if end_date:
+        query = query.filter(Transaction.date <= end_date)
+
+    uncategorized = query.all()
+
+    if not uncategorized:
+        return {
+            "message": "Inga okategoriserade transaktioner hittades",
+            "categorized_count": 0
+        }
+
+    categorizer = TransactionCategorizer(db)
+    categorized_count = 0
+
+    for transaction in uncategorized:
+        category_id = categorizer.categorize(transaction.description)
+        if category_id:
+            transaction.category_id = category_id
+            categorized_count += 1
+
+    db.commit()
+
+    return {
+        "message": f"Kategoriserade {categorized_count} av {len(uncategorized)} transaktioner",
+        "categorized_count": categorized_count,
+        "total_processed": len(uncategorized)
+    }

@@ -1,28 +1,51 @@
 import { useEffect, useState } from 'react';
 import { periodApi } from '../api/client';
 import type { PeriodSummary } from '../types';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { TrendingUp, TrendingDown, Wallet, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function Dashboard() {
   const [period, setPeriod] = useState<PeriodSummary | null>(null);
+  const [periods, setPeriods] = useState<PeriodSummary[]>([]);
+  const [selectedPeriodIndex, setSelectedPeriodIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadCurrentPeriod();
+    loadPeriods();
   }, []);
 
-  const loadCurrentPeriod = async () => {
+  useEffect(() => {
+    if (periods.length > 0 && selectedPeriodIndex < periods.length) {
+      setPeriod(periods[selectedPeriodIndex]);
+    }
+  }, [selectedPeriodIndex, periods]);
+
+  const loadPeriods = async () => {
     try {
       setLoading(true);
-      const data = await periodApi.getCurrent();
-      setPeriod(data);
+      const data = await periodApi.list(12);
+      setPeriods(data);
+      if (data.length > 0) {
+        setPeriod(data[0]);
+      }
     } catch (err) {
       setError('Kunde inte ladda period-data');
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePreviousPeriod = () => {
+    if (selectedPeriodIndex < periods.length - 1) {
+      setSelectedPeriodIndex(selectedPeriodIndex + 1);
+    }
+  };
+
+  const handleNextPeriod = () => {
+    if (selectedPeriodIndex > 0) {
+      setSelectedPeriodIndex(selectedPeriodIndex - 1);
     }
   };
 
@@ -48,11 +71,47 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Period Header */}
+      {/* Period Header with Navigation */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {period.period_name}
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-gray-900">
+            {period.period_name}
+          </h2>
+
+          {/* Period Navigation */}
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={handlePreviousPeriod}
+              disabled={selectedPeriodIndex >= periods.length - 1}
+              className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Föregående period"
+            >
+              <ChevronLeft size={20} />
+            </button>
+
+            <select
+              value={selectedPeriodIndex}
+              onChange={(e) => setSelectedPeriodIndex(parseInt(e.target.value))}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              {periods.map((p, index) => (
+                <option key={index} value={index}>
+                  {p.period_name}
+                </option>
+              ))}
+            </select>
+
+            <button
+              onClick={handleNextPeriod}
+              disabled={selectedPeriodIndex <= 0}
+              className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Nästa period"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </div>
+
         <p className="text-sm text-gray-500">
           {period.transaction_count} transaktioner
         </p>

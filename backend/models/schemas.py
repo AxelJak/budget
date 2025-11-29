@@ -101,3 +101,8 @@ class ImportResponse(BaseModel):
     duplicates: int
     errors: int
     message: str
+
+
+class BulkCategorizeRequest(BaseModel):
+    transaction_ids: list[int]
+    category_id: Optional[int] = None
