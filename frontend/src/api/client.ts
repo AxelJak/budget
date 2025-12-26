@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Transaction, Category, PeriodSummary, ImportResponse } from '../types';
+import type { Transaction, Category, PeriodSummary, ImportResponse, Loan, LoanWithPayments, LoanPayment, Savings, SavingsWithTransactions, SavingsTransaction } from '../types';
 
 const API_BASE = '/api';
 
@@ -116,6 +116,96 @@ export const periodApi = {
     const response = await api.get<PeriodSummary[]>('/periods/list', {
       params: { limit },
     });
+    return response.data;
+  },
+};
+
+// Loans
+export const loanApi = {
+  getAll: async (activeOnly = true) => {
+    const response = await api.get<Loan[]>('/loans/', {
+      params: { active_only: activeOnly },
+    });
+    return response.data;
+  },
+
+  getById: async (id: number) => {
+    const response = await api.get<LoanWithPayments>(`/loans/${id}`);
+    return response.data;
+  },
+
+  create: async (data: Omit<Loan, 'id' | 'created_at' | 'updated_at'>) => {
+    const response = await api.post<Loan>('/loans/', data);
+    return response.data;
+  },
+
+  update: async (id: number, data: Partial<Omit<Loan, 'id' | 'created_at' | 'updated_at'>>) => {
+    const response = await api.put<Loan>(`/loans/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: number) => {
+    const response = await api.delete(`/loans/${id}`);
+    return response.data;
+  },
+
+  getPayments: async (loanId: number) => {
+    const response = await api.get<LoanPayment[]>(`/loans/${loanId}/payments`);
+    return response.data;
+  },
+
+  addPayment: async (data: Omit<LoanPayment, 'id' | 'created_at'>) => {
+    const response = await api.post<LoanPayment>('/loans/payments', data);
+    return response.data;
+  },
+
+  deletePayment: async (paymentId: number) => {
+    const response = await api.delete(`/loans/payments/${paymentId}`);
+    return response.data;
+  },
+};
+
+// Savings
+export const savingsApi = {
+  getAll: async (activeOnly = true) => {
+    const response = await api.get<Savings[]>('/savings/', {
+      params: { active_only: activeOnly },
+    });
+    return response.data;
+  },
+
+  getById: async (id: number) => {
+    const response = await api.get<SavingsWithTransactions>(`/savings/${id}`);
+    return response.data;
+  },
+
+  create: async (data: Omit<Savings, 'id' | 'created_at' | 'updated_at'>) => {
+    const response = await api.post<Savings>('/savings/', data);
+    return response.data;
+  },
+
+  update: async (id: number, data: Partial<Omit<Savings, 'id' | 'created_at' | 'updated_at'>>) => {
+    const response = await api.put<Savings>(`/savings/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: number) => {
+    const response = await api.delete(`/savings/${id}`);
+    return response.data;
+  },
+
+  getTransactions: async (savingsId: number) => {
+    const response = await api.get<SavingsTransaction[]>(`/savings/${savingsId}/transactions`);
+    return response.data;
+  },
+
+  addTransaction: async (data: Omit<SavingsTransaction, 'id' | 'created_at'>) => {
+    const response = await api.post<SavingsTransaction>('/savings/transactions', data);
+    return response.data;
+  },
+
+  deleteTransaction: async (transactionId: number) => {
+    const response = await api.delete(`/savings/transactions/${transactionId}`);
     return response.data;
   },
 };

@@ -106,3 +106,114 @@ class ImportResponse(BaseModel):
 class BulkCategorizeRequest(BaseModel):
     transaction_ids: list[int]
     category_id: Optional[int] = None
+
+
+class LoanBase(BaseModel):
+    name: str
+    initial_amount: float
+    current_balance: float
+    interest_rate: Optional[float] = None
+    monthly_payment: Optional[float] = None
+    start_date: datetime
+    description: Optional[str] = None
+    is_active: bool = True
+
+
+class LoanCreate(LoanBase):
+    pass
+
+
+class LoanUpdate(BaseModel):
+    name: Optional[str] = None
+    current_balance: Optional[float] = None
+    interest_rate: Optional[float] = None
+    monthly_payment: Optional[float] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class Loan(LoanBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class LoanPaymentBase(BaseModel):
+    loan_id: int
+    date: datetime
+    amount: float
+    principal_amount: Optional[float] = None
+    interest_amount: Optional[float] = None
+    description: Optional[str] = None
+
+
+class LoanPaymentCreate(LoanPaymentBase):
+    pass
+
+
+class LoanPayment(LoanPaymentBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class LoanWithPayments(Loan):
+    payments: list[LoanPayment] = []
+
+
+class SavingsBase(BaseModel):
+    name: str
+    current_balance: float
+    account_type: Optional[str] = None
+    description: Optional[str] = None
+    is_active: bool = True
+
+
+class SavingsCreate(SavingsBase):
+    pass
+
+
+class SavingsUpdate(BaseModel):
+    name: Optional[str] = None
+    current_balance: Optional[float] = None
+    account_type: Optional[str] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class Savings(SavingsBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class SavingsTransactionBase(BaseModel):
+    savings_id: int
+    date: datetime
+    amount: float
+    transaction_type: str = Field(..., pattern="^(deposit|withdrawal|interest)$")
+    description: Optional[str] = None
+
+
+class SavingsTransactionCreate(SavingsTransactionBase):
+    pass
+
+
+class SavingsTransaction(SavingsTransactionBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class SavingsWithTransactions(Savings):
+    transactions: list[SavingsTransaction] = []
