@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import init_db, get_db
-from routers import transactions, categories, periods
+from routers import transactions, categories, periods, loans, savings
 from models.database import Category
 from sqlalchemy.orm import Session
 
@@ -24,6 +24,8 @@ app.add_middleware(
 app.include_router(transactions.router)
 app.include_router(categories.router)
 app.include_router(periods.router)
+app.include_router(loans.router)
+app.include_router(savings.router)
 
 
 @app.on_event("startup")

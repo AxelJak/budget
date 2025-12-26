@@ -50,3 +50,57 @@ export interface ImportResponse {
   errors: number;
   message: string;
 }
+
+export interface Loan {
+  id: number;
+  name: string;
+  initial_amount: number;
+  current_balance: number;
+  interest_rate: number | null;
+  monthly_payment: number | null;
+  start_date: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LoanPayment {
+  id: number;
+  loan_id: number;
+  date: string;
+  amount: number;
+  principal_amount: number | null;
+  interest_amount: number | null;
+  description: string | null;
+  created_at: string;
+}
+
+export interface LoanWithPayments extends Loan {
+  payments: LoanPayment[];
+}
+
+export interface Savings {
+  id: number;
+  name: string;
+  current_balance: number;
+  account_type: string | null;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SavingsTransaction {
+  id: number;
+  savings_id: number;
+  date: string;
+  amount: number;
+  transaction_type: 'deposit' | 'withdrawal' | 'interest';
+  description: string | null;
+  created_at: string;
+}
+
+export interface SavingsWithTransactions extends Savings {
+  transactions: SavingsTransaction[];
+}

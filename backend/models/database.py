@@ -72,3 +72,69 @@ class Period(Base):
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Loan(Base):
+    """Lån som ska spåras"""
+    __tablename__ = "loans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)  # "Huslån", "Billån", "Lån från pappa"
+    initial_amount = Column(Float, nullable=False)  # Ursprungligt lånebelopp
+    current_balance = Column(Float, nullable=False)  # Aktuellt saldo
+    interest_rate = Column(Float, nullable=True)  # Ränta i procent (t.ex. 2.5)
+    monthly_payment = Column(Float, nullable=True)  # Fast månadsbelopp
+    start_date = Column(DateTime, nullable=False)
+    description = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)  # För att kunna markera avslutade lån
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    payments = relationship("LoanPayment", back_populates="loan", cascade="all, delete-orphan")
+
+
+class LoanPayment(Base):
+    """Betalningar på lån"""
+    __tablename__ = "loan_payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    loan_id = Column(Integer, ForeignKey("loans.id"), nullable=False)
+    date = Column(DateTime, nullable=False, index=True)
+    amount = Column(Float, nullable=False)
+    principal_amount = Column(Float, nullable=True)  # Amortering
+    interest_amount = Column(Float, nullable=True)  # Ränta
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    loan = relationship("Loan", back_populates="payments")
+
+
+class Savings(Base):
+    """Sparkonton"""
+    __tablename__ = "savings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)  # "Gemensamt sparkonto"
+    current_balance = Column(Float, nullable=False)
+    account_type = Column(String, nullable=True)  # "Sparkonto", "Fond", etc.
+    description = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    transactions = relationship("SavingsTransaction", back_populates="savings_account", cascade="all, delete-orphan")
+
+
+class SavingsTransaction(Base):
+    """Transaktioner för sparkonton"""
+    __tablename__ = "savings_transactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    savings_id = Column(Integer, ForeignKey("savings.id"), nullable=False)
+    date = Column(DateTime, nullable=False, index=True)
+    amount = Column(Float, nullable=False)  # Positivt = insättning, Negativt = uttag
+    transaction_type = Column(String, nullable=False)  # "deposit", "withdrawal", "interest"
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    savings_account = relationship("Savings", back_populates="transactions")

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { periodApi } from '../api/client';
-import type { PeriodSummary } from '../types';
+import { periodApi, loanApi, savingsApi } from '../api/client';
+import type { PeriodSummary, Loan, Savings } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { TrendingUp, TrendingDown, Wallet, ChevronLeft, ChevronRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, ChevronLeft, ChevronRight, DollarSign, PiggyBank } from 'lucide-react';
 
 export default function Dashboard() {
   const [period, setPeriod] = useState<PeriodSummary | null>(null);
@@ -10,9 +10,13 @@ export default function Dashboard() {
   const [selectedPeriodIndex, setSelectedPeriodIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loans, setLoans] = useState<Loan[]>([]);
+  const [savings, setSavings] = useState<Savings[]>([]);
 
   useEffect(() => {
     loadPeriods();
+    loadLoans();
+    loadSavings();
   }, []);
 
   useEffect(() => {
@@ -34,6 +38,24 @@ export default function Dashboard() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadLoans = async () => {
+    try {
+      const data = await loanApi.getAll();
+      setLoans(data);
+    } catch (err) {
+      console.error('Kunde inte ladda lån:', err);
+    }
+  };
+
+  const loadSavings = async () => {
+    try {
+      const data = await savingsApi.getAll();
+      setSavings(data);
+    } catch (err) {
+      console.error('Kunde inte ladda sparande:', err);
     }
   };
 
@@ -152,6 +174,97 @@ export default function Dashboard() {
           <p className="text-3xl font-bold text-gray-900">
             {formatCurrency(period.total_variable)}
           </p>
+        </div>
+      </div>
+
+      {/* Loans and Savings */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Loans */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <DollarSign className="text-red-600" size={20} />
+              Lån
+            </h3>
+          </div>
+          {loans.length === 0 ? (
+            <p className="text-gray-500 text-sm">Inga lån registrerade</p>
+          ) : (
+            <div className="space-y-3">
+              {loans.map(loan => {
+                const paidAmount = loan.initial_amount - loan.current_balance;
+                const paidPercentage = (paidAmount / loan.initial_amount) * 100;
+
+                return (
+                  <div key={loan.id} className="border-l-4 border-red-400 pl-3">
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="font-medium text-sm">{loan.name}</span>
+                      <span className="text-sm text-gray-600">
+                        {formatCurrency(loan.current_balance)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>Betalt: {formatCurrency(paidAmount)}</span>
+                      <span>{paidPercentage.toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-green-500 h-2 rounded-full transition-all"
+                        style={{ width: `${paidPercentage}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="pt-3 border-t">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">Totalt kvar:</span>
+                  <span className="text-xl font-bold text-red-600">
+                    {formatCurrency(loans.reduce((sum, loan) => sum + loan.current_balance, 0))}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Savings */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <PiggyBank className="text-green-600" size={20} />
+              Sparande
+            </h3>
+          </div>
+          {savings.length === 0 ? (
+            <p className="text-gray-500 text-sm">Inga sparkonton registrerade</p>
+          ) : (
+            <div className="space-y-3">
+              {savings.map(account => (
+                <div key={account.id} className="border-l-4 border-green-400 pl-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="font-medium text-sm block">{account.name}</span>
+                      {account.account_type && (
+                        <span className="text-xs text-gray-500">{account.account_type}</span>
+                      )}
+                    </div>
+                    <span className="text-sm font-semibold text-green-600">
+                      {formatCurrency(account.current_balance)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              <div className="pt-3 border-t">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">Totalt sparat:</span>
+                  <span className="text-xl font-bold text-green-600">
+                    {formatCurrency(savings.reduce((sum, s) => sum + s.current_balance, 0))}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

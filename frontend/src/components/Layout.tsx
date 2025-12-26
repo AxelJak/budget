@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Home, Upload, List, PieChart } from 'lucide-react';
+import { Home, Upload, List, PieChart, DollarSign, PiggyBank } from 'lucide-react';
 
 export default function Layout() {
   const location = useLocation();
@@ -25,6 +25,12 @@ export default function Layout() {
               </NavLink>
               <NavLink to="/categories" icon={<PieChart size={20} />} active={isActive('/categories')}>
                 Kategorier
+              </NavLink>
+              <NavLink to="/loans" icon={<DollarSign size={20} />} active={isActive('/loans')}>
+                Lån
+              </NavLink>
+              <NavLink to="/savings" icon={<PiggyBank size={20} />} active={isActive('/savings')}>
+                Sparande
               </NavLink>
             </nav>
           </div>
