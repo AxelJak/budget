@@ -1,0 +1,14 @@
+# Dockerfile optimized for Raspberry Pi - uses pre-built frontend
+# Build the frontend on your main computer first with: cd frontend && npm run build
+
+FROM nginx:alpine
+
+# Copy pre-built assets (must be built on host machine first)
+COPY dist /usr/share/nginx/html
+
+# Copy nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

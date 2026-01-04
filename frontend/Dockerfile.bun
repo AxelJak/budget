@@ -1,0 +1,28 @@
+# Experimental Bun-based build for Raspberry Pi
+# Bun uses ~20-30% less memory than Node.js and installs packages faster
+
+FROM oven/bun:1-alpine as build
+
+WORKDIR /app
+
+# Install dependencies with Bun (faster and more memory-efficient)
+COPY package.json bun.lockb* package-lock.json* ./
+RUN bun install --frozen-lockfile || bun install
+
+# Copy source and build with Bun
+COPY . .
+# Bun can run vite build directly
+RUN bun run build
+
+# Production stage with nginx
+FROM nginx:alpine
+
+# Copy built assets
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Copy nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
