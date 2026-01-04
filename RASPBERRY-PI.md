@@ -74,49 +74,11 @@ watch -n 1 free -h
 - ❌ Bun is newer, less mature than Node.js
 - ❌ Takes 10-15 minutes on RPi Zero 2 W
 
-**If it fails:** Try with small swap (1GB) using the setup script, then retry.
+**If it fails:** Fall back to Option 1 (pre-build on another machine).
 
 ---
 
-### Option 3: Build on Raspberry Pi with Node.js + Swap
-
-Build directly on the RPi by adding swap space. **Warning:** This wears out SD cards faster.
-
-**On your Raspberry Pi:**
-
-1. **Add swap space:**
-```bash
-chmod +x setup-rpi-swap.sh
-sudo ./setup-rpi-swap.sh
-```
-
-2. **Update frontend Dockerfile:**
-```bash
-# Rename the optimized Dockerfile
-cd frontend
-mv Dockerfile Dockerfile.original
-mv Dockerfile.rpi-build Dockerfile
-cd ..
-```
-
-3. **Build with Docker:**
-```bash
-# This will take 15-30 minutes on RPi Zero 2 W
-docker-compose up -d --build
-```
-
-**Pros:**
-- ✅ Everything builds on RPi
-- ✅ No need for another machine
-
-**Cons:**
-- ❌ Very slow (15-30 min on RPi Zero 2 W)
-- ❌ Wears out SD card due to swap usage
-- ❌ Can still fail if RAM pressure is too high
-
----
-
-### Option 4: Use Pre-built Docker Images
+### Option 3: Use Pre-built Docker Images
 
 If you set up Docker Hub or GitHub Container Registry, you can build images on powerful CI/CD runners.
 
@@ -144,7 +106,7 @@ services:
 ### Quick Test (Try First!)
 1. On RPi: `docker-compose -f docker-compose.bun.yml up -d --build`
 2. If it works: You're done! 🎉
-3. If it fails: Use Option 1 or Option 3 below
+3. If it fails: Use Option 1 (pre-build on another machine)
 
 ### Production (Most Reliable)
 1. **Development:** Work on your main computer
@@ -195,26 +157,21 @@ vcgencmd measure_temp
 
 ## Troubleshooting
 
-### Build still fails with swap
-- Increase swap size in `setup-rpi-swap.sh` to 4096MB
-- Close other applications during build
-- Use `docker build --memory=512m --memory-swap=2g`
+### Bun build fails with memory error
+- Close other applications during build to free up memory
+- Try Option 1 (pre-build on another machine) instead
+- Monitor memory usage: `watch -n 1 free -h`
 
 ### RPi becomes unresponsive during build
-- SSH might timeout, but build continues
+- SSH might timeout, but build continues in background
 - Access via HDMI if needed
-- Consider Option 1 instead
+- Consider using Option 1 (pre-build) instead
 
 ### Containers start but app doesn't load
 - Check logs: `docker logs budget-backend`
 - Verify ports: `netstat -tlnp | grep -E '3000|8000'`
 - Check nginx config in frontend container
-
-### SD card wears out quickly
-- Switch to Option 1 (no swap needed)
-- Use read-only root filesystem
-- Mount `/tmp` as tmpfs
-- Move Docker data to USB drive
+- Ensure both containers are running: `docker ps`
 
 ## File Reference
 
@@ -222,6 +179,5 @@ vcgencmd measure_temp
 - `docker-compose.bun.yml` - Docker Compose with Bun runtime (Option 2)
 - `frontend/Dockerfile.rpi` - Nginx-only Dockerfile (no build step, Option 1)
 - `frontend/Dockerfile.bun` - Bun-based build Dockerfile (Option 2)
-- `frontend/Dockerfile.rpi-build` - Node.js memory-optimized Dockerfile (Option 3)
 - `build-and-deploy-rpi.sh` - Build script for Option 1
-- `setup-rpi-swap.sh` - Swap setup script for Option 3
+- `test-bun-build.sh` - Interactive test script for Bun build
